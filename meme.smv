@@ -1,0 +1,62 @@
+MODULE main
+
+VAR
+    --MEMEからの送信データ--
+    --{空, MEME正常, MEME異常, b, c} --
+    DATA : {emp, dt_a_T, dt_a_F, dt_b, dt_c};
+
+    --サーバのメモリ--
+    --{空, a, ab, ac, 全蓄積} --
+    MEM : {emp, dt_a, dt_ab, dt_ac, full};
+
+    --印刷ボタン（TRUE:表示FALSE:非表示）--
+    BTN : boolean;
+
+    --係員の印刷ボタン押下（TRUE:押すFALSE:押さない）--
+    STAFF : boolean;
+
+    --印刷内容--
+    PRT : {emp, dt_a, dt_ab, dt_ac, full};
+
+ASSIGN
+    -- 初期値の設定 --
+    init(DATA) := emp;
+    init(MEM) := emp;
+    init(BTN) := FALSE;
+    init(STAFF) :=  FALSE;
+    init(PRT) := emp;
+
+    -- 状態遷移の記述 --
+    next(DATA) := {emp, dt_a_T, dt_a_F, dt_b, dt_c};
+
+    next(MEM) := case
+        MEM = emp & DATA = dt_a_T : dt_a;
+        MEM = dt_a & DATA = dt_b : dt_ab;
+        MEM = dt_a & DATA = dt_c : dt_ac;
+        MEM = dt_ab & DATA = dt_c : full;
+        MEM = dt_ab & DATA = dt_a_F : emp;
+        MEM = dt_ac & DATA = dt_b : full;
+        MEM = dt_ac & DATA = dt_a_F : emp;
+        MEM = full & STAFF = TRUE : emp;
+        MEM = full  & DATA = dt_a_F : emp;
+        TRUE : MEM;
+    esac;
+
+    next(BTN) := case
+        BTN = FALSE & MEM = full : TRUE;
+        BTN = TRUE & STAFF = TRUE : FALSE;
+        TRUE : BTN;
+    esac;
+
+    next(STAFF) := case
+        STAFF = FALSE & BTN = TRUE : TRUE;
+        STAFF = TRUE & BTN = FALSE : FALSE;
+        TRUE : STAFF;
+    esac;
+
+    next(PRT) := case
+        BTN = TRUE & STAFF = TRUE : MEM;
+        TRUE : emp;
+    esac;
+
+SPEC !EF(PRT = dt_a)
